@@ -2,67 +2,143 @@ import tkinter as tk
 from tkinter import messagebox
 import random
 import string
+import pyperclip
 
+
+def validate_inputs(length):
+    if(length <= 0):
+            raise ValueError("password length should be grater than 0.")
+    
+    if ((not small_char_var.get()) and (not capital_char_var.get()) and ( not numeric_char_var.get()) and (not special_char_var.get())):
+        raise ValueError("Atleast one character type must be selected")
+    
+    if (small_char_var.get() and capital_char_var.get() and numeric_char_var.get() and special_char_var.get() and length < 4):
+        raise ValueError("password length should be more than 3 when all characters type are selected")
+    
+    if(small_char_var.get()+capital_char_var.get()+numeric_char_var.get()+special_char_var.get() > length):
+        raise ValueError("password length should be greater than character selected")
+   
 def generate_password(length):
-    characters = string.ascii_letters + string.digits + string.punctuation
-    password = ''.join(random.choice(characters) for _ in range(length))
+    password_container = []
+    characters = []
+
+    if small_char_var.get():
+        password_container.append(random.choice(string.ascii_lowercase))
+        characters += list(string.ascii_lowercase)
+        length-=1
+
+    if capital_char_var.get():
+        password_container.append(random.choice(string.ascii_uppercase))
+        characters += list(string.ascii_uppercase)
+        length-=1
+
+
+    if numeric_char_var.get():
+       password_container.append(random.choice(string.digits))
+       characters += list(string.digits)
+       length -= 1
+
+    if special_char_var.get():
+        password_container.append(random.choice(string.punctuation))
+        characters += list(string.punctuation)
+        length -= 1
+
+    random.shuffle(characters)
+
+    for _ in range(length):
+        password_container.append(random.choice(characters))
+
+    random.shuffle(password_container)
+
+    password = ''.join(char for char in password_container)
+
     return password
+
+def update_widgets(**kwargs):
+    entry_generated_password.delete(0, tk.END)
+    entry_generated_password.insert(0, kwargs["password"])
+    button_copy["state"] = "normal"
+    button_copy["cursor"] = "hand2"
 
 def on_generate_password():
     try:
-        length = int(entry_password_length.get())
-        if length <= 0:
-            raise ValueError("Password length should be greater than 0.")
-        password = generate_password(length)
-        entry_generated_password.delete(0, tk.END)
-        entry_generated_password.insert(0, password)
+        password_length = int(entry_password_length.get())
+        validate_inputs(password_length)
+        password = generate_password(password_length)
+        update_widgets(password=password)
     except ValueError as ve:
         messagebox.showerror("Invalid input", f"Invalid input: {ve}")
+    except Exception as e:
+         messagebox.showerror("Error", f"An unexpected error occurred: {e}")
 
-def on_accept():
-    username = entry_username.get()
-    password = entry_generated_password.get()
-    messagebox.showinfo("Password Accepted", f"Username: {username}\nPassword: {password}")
+def on_copy():
+    password = entry_generated_password.get() 
+    pyperclip.copy(password)
+    button_copy["state"] = "disabled"
+    button_copy["cursor"] = "arrow"
 
 def on_reset():
-    entry_username.delete(0, tk.END)
-    entry_password_length.delete(0, tk.END)
+    entry_password_length.delete(0,tk.END)
+    entry_password_length.insert(0,8)
     entry_generated_password.delete(0, tk.END)
+    checkbox_small_char.deselect()
+    checkbox_capital_char.deselect()
+    checkbox_numeric_char.deselect()
+    checkbox_special_char.deselect()
 
-# Create the main window
-root = tk.Tk()
-root.title("Password Generator")
+
+FONT = ("Helvetica", 14, "normal")
+
+
+window = tk.Tk()
+window.title("Password Generator")
+
+root = tk.Frame(window)
+root.pack(padx=20,pady=20)
+
 
 # Create and place the widgets
 label_title = tk.Label(root, text="Password Generator", font=("Helvetica", 16, "bold"))
 label_title.grid(row=0, column=0, columnspan=2, pady=10)
 
-label_username = tk.Label(root, text="Enter user name:")
-label_username.grid(row=1, column=0, sticky=tk.E, padx=5, pady=5)
+label_password_length = tk.Label(root,text="Password Length :",font=FONT)
+label_password_length.grid(row=1,column=0,sticky='w')
 
-entry_username = tk.Entry(root)
-entry_username.grid(row=1, column=1, padx=5, pady=5)
+entry_password_length = tk.Entry(root,font=FONT)
+entry_password_length.insert(0,8)
+entry_password_length.grid(row=1,column=1,ipadx=5,ipady=5,sticky='w')
 
-label_password_length = tk.Label(root, text="Enter password length:")
-label_password_length.grid(row=2, column=0, sticky=tk.E, padx=5, pady=5)
+small_char_var = tk.IntVar()
+checkbox_small_char = tk.Checkbutton(root,text="small chars",variable=small_char_var,font=FONT,cursor='hand2')
+checkbox_small_char.grid(row=2,column=0,sticky='w')
 
-entry_password_length = tk.Entry(root)
-entry_password_length.grid(row=2, column=1, padx=5, pady=5)
+capital_char_var = tk.IntVar()
+checkbox_capital_char = tk.Checkbutton(root,text="capital chars",variable=capital_char_var,justify='left',font=FONT,cursor='hand2')
+checkbox_capital_char.grid(row=3,column=0,sticky='w')
 
-label_generated_password = tk.Label(root, text="Generated password:")
-label_generated_password.grid(row=3, column=0, sticky=tk.E, padx=5, pady=5)
+numeric_char_var = tk.IntVar()
+checkbox_numeric_char = tk.Checkbutton(root,text="numeric chars",variable=numeric_char_var,font=FONT,cursor='hand2')
+checkbox_numeric_char.grid(row=4,column=0,sticky='w')
 
-entry_generated_password = tk.Entry(root)
-entry_generated_password.grid(row=3, column=1, padx=5, pady=5)
+special_char_var = tk.IntVar()
+checkbox_special_char = tk.Checkbutton(root,text="special chars",variable=special_char_var,font=FONT,cursor='hand2')
+checkbox_special_char.grid(row=5,column=0,sticky='w')
 
-button_generate = tk.Button(root, text="GENERATE PASSWORD", command=on_generate_password, bg="blue", fg="white")
-button_generate.grid(row=4, column=0, columnspan=2, pady=10)
 
-button_accept = tk.Button(root, text="ACCEPT", command=on_accept)
-button_accept.grid(row=5, column=0, pady=5)
+label_generated_password = tk.Label(root, text="Generated password:",font=FONT)
+label_generated_password.grid(row=6, column=0, sticky=tk.E, padx=5, pady=5)
 
-button_reset = tk.Button(root, text="RESET", command=on_reset)
-button_reset.grid(row=5, column=1, pady=5)
+entry_generated_password = tk.Entry(root,font=FONT)
+entry_generated_password.grid(row=6, column=1, padx=5, pady=5)
 
-# Start the main loop
+button_generate = tk.Button(root, text="GENERATE PASSWORD", bg="blue", fg="white",font=FONT,cursor='hand2',command=on_generate_password)
+button_generate.grid(row=7, column=0, columnspan=2, pady=20)
+
+button_copy = tk.Button(root, text="COPY",font=FONT,cursor='arrow',command=on_copy,state="disabled")
+button_copy.grid(row=8, column=0, pady=5)
+
+button_reset = tk.Button(root, text="RESET",font=FONT,cursor='hand2',command=on_reset)
+button_reset.grid(row=8, column=1, pady=5)
+
+
 root.mainloop()
